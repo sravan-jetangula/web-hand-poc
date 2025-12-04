@@ -1,0 +1,33 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Hand Detection POC</title>
+</head>
+<body>
+<h1>Hand Detection</h1>
+<video id="video" width="320" height="240" autoplay muted playsinline style="display:none;"></video>
+<img id="out" width="640" height="480"/>
+<script>
+const ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+ws.binaryType="arraybuffer";
+const v=document.getElementById('video');
+const out=document.getElementById('out');
+const c=document.createElement('canvas'); const ctx=c.getContext('2d');
+c.width=640;c.height=480;
+navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
+ v.srcObject=stream; v.play();
+ setInterval(()=>{
+  ctx.drawImage(v,0,0,640,480);
+  c.toBlob(b=>b.arrayBuffer().then(ab=>ws.send(ab)),'image/jpeg',0.7);
+ },120);
+});
+ws.onmessage=e=>{
+ let blob=new Blob([e.data],{type:'image/jpeg'});
+ out.src=URL.createObjectURL(blob);
+ setTimeout(()=>URL.revokeObjectURL(out.src),1500);
+};
+</script>
+</body>
+</html>
